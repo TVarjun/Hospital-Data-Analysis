@@ -1,0 +1,209 @@
+/*
+Hospital data analysis
+/*
+-- creating a database in sql to import the csv file
+
+create database hospitalmanagement;
+use hospitalmanagement;
+
+-- Create a table for hospitalmanagement and import the data to table
+
+CREATE TABLE hospital (
+    Facility_Name VARCHAR(255),
+    Facility_City VARCHAR(100),
+    Facility_State CHAR(2),
+    Facility_Type VARCHAR(50),
+    Rating_Overall INT,
+    Rating_Mortality VARCHAR(50),
+    Rating_Safety VARCHAR(50),
+    Rating_Readmission VARCHAR(50),
+    Rating_Experience VARCHAR(50),
+    Rating_Effectiveness VARCHAR(50),
+    Rating_Timeliness VARCHAR(50),
+    Rating_Imaging VARCHAR(50),
+    Procedure_Heart_Attack_Cost INT,
+    Procedure_Heart_Attack_Quality VARCHAR(50),
+    Procedure_Heart_Attack_Value VARCHAR(50),
+    Procedure_Heart_Failure_Cost INT,
+    Procedure_Heart_Failure_Quality VARCHAR(50),
+    Procedure_Heart_Failure_Value VARCHAR(50),
+    Procedure_Pneumonia_Cost INT,
+    Procedure_Pneumonia_Quality VARCHAR(50),
+    Procedure_Pneumonia_Value VARCHAR(50),
+    Procedure_Hip_Knee_Cost INT,
+    Procedure_Hip_Knee_Quality VARCHAR(50),
+    Procedure_Hip_Knee_Value VARCHAR(50)
+);
+
+-- Run a simple query to verify imported data.
+
+SELECT 
+    *
+FROM
+    hospital
+LIMIT 10;
+
+--  What is the average overall hospital rating by facility type?
+--  Purpose: Understand if hospital types (e.g., Government, Private) correlate with overall performance.
+
+SELECT 
+    facility_type, AVG(rating_overall) AS Avg_overall_rating
+FROM
+    hospital
+GROUP BY facility_type;
+
+-- Which state has the highest average rating for mortality and safety?
+-- Purpose: Identify states excelling in critical healthcare performance metrics.
+
+SELECT Facility_State, 
+       AVG(CASE WHEN Rating_Mortality = 'Above' THEN 1 ELSE 0 END) AS Mortality_Rate,
+       AVG(CASE WHEN Rating_Safety = 'Above' THEN 1 ELSE 0 END) AS Safety_Rate
+FROM hospital 
+GROUP BY Facility_State
+ORDER BY Safety_Rate DESC, Mortality_Rate DESC
+LIMIT 1;
+
+
+-- Which procedures have the highest cost, and in which hospitals?
+-- Purpose:Highlight cost outliers for resource optimization.
+
+SELECT 
+    facility_name,
+    Procedure_Heart_Attack_Cost,
+    Procedure_Heart_Failure_Cost,
+    Procedure_Pneumonia_Cost,
+    Procedure_Hip_Knee_Cost
+FROM
+    hospital
+ORDER BY GREATEST(Procedure_Heart_Attack_Cost,
+        Procedure_Heart_Failure_Cost,
+        Procedure_Pneumonia_Cost,
+        Procedure_Hip_Knee_Cost) DESC
+LIMIT 5;
+
+-- What is the relationship between cost and quality for each procedure?
+-- Purpose: Determine if higher costs translate to better quality care.
+
+SELECT 
+    AVG(Procedure_Heart_Attack_Cost) Avg_Heart_Attack_cost,
+    AVG(CASE
+        WHEN Procedure_Heart_Attack_Quality = 'above' THEN 1
+        ELSE 0
+    END) AS Quality
+FROM
+    hospital;
+    -- (Repeat for other procedures)
+    
+-- Which cities consistently rank highest across all healthcare metrics?
+-- Purpose: Recognize top-performing cities for potential case studies
+    
+   SELECT 
+    facility_city,
+    AVG(Rating_overall) AS Avg_rating,
+    AVG(CASE
+        WHEN rating_mortality = 'above' THEN 1
+        ELSE 0
+    END) AS Mortality_score,
+    AVG(CASE
+        WHEN rating_safety = 'above' THEN 1
+        ELSE 0
+    END) AS Safety_score
+FROM
+    hospital
+GROUP BY facility_city
+ORDER BY Avg_rating DESC
+LIMIT 5;
+
+-- What is the distribution of hospitals by rating categories across states?
+-- Purpose: Explore geographic disparities in healthcare quality.
+
+SELECT 
+    facility_state, rating_overall, COUNT(*) AS Hospital_count
+FROM
+    hospital
+GROUP BY facility_state , rating_overall
+ORDER BY facility_state , rating_overall
+LIMIT 5;
+
+
+-- Which hospitals have the worst readmission and safety ratings?
+-- Purpose: Focus improvement efforts on underperforming facilities.
+
+SELECT 
+    facility_name, facility_city, facility_state
+FROM
+    hospital
+WHERE
+    Rating_readmission = 'Below'
+        AND Rating_safety = 'Below';
+        
+-- What is the average cost difference between government and private hospitals?
+-- Purpose: Analyze cost-efficiency based on hospital ownership.
+
+SELECT 
+    facility_type,
+    AVG(Procedure_Heart_Attack_Cost) AS Avg_Heart_Attack_Cost,
+    AVG(Procedure_Heart_Failure_Cost) AS Avg_Heat_Failure_Cost,
+    AVG(Procedure_Pneumonia_Cost) AS Avg_Pneumonia_Cost,
+    AVG(Procedure_Hip_Knee_Cost) AS Avg_Hip_Cost
+FROM
+    hospital
+GROUP BY facility_type;
+
+
+--  Which states have the lowest-cost heart attack procedures with average quality?
+--  Purpose: Identify cost-efficient states for quality care.
+
+SELECT 
+    Facility_State,
+    AVG(Procedure_Heart_Attack_Cost) AS Avg_Heart_Attack_Cost
+FROM
+    hospital
+WHERE
+    Procedure_Heart_Attack_Quality = 'average'
+GROUP BY Facility_State
+ORDER BY Avg_Heart_Attack_Cost ASC
+LIMIT 5;
+
+
+-- What percentage of hospitals in each state fall below average in experience ratings?
+-- Purpose: Evaluate patient satisfaction trends geographically.
+
+SELECT 
+    Facility_State,
+    COUNT(CASE
+        WHEN Rating_Experience = 'Below' THEN 1
+    END) * 100.0 / COUNT(*) AS Below_Avg_Percentage
+FROM
+    hospital
+GROUP BY Facility_State;
+
+
+-- Which cities have an average hospital rating (overall) greater than 3, considering only cities with more than 5 hospitals?
+-- Purpose: The HAVING clause is used here to filter cities based on aggregated data.
+
+SELECT 
+    Facility_City,
+    COUNT(*) AS Total_Hospitals,
+    AVG(Rating_Overall) AS Avg_Overall_Rating
+FROM
+    hospitals
+GROUP BY Facility_City
+HAVING COUNT(*) > 5 AND AVG(Rating_Overall) > 3
+ORDER BY Avg_Overall_Rating DESC;
+
+
+-- Create a view to find the average procedure cost for each hospital and list hospitals with above-average procedure costs for heart attack.
+-- Purpose: Use a VIEW to simplify the query and reuse it for further analysis.
+
+
+CREATE VIEW Hospital_Procedure_Costs AS
+    SELECT 
+        Facility_Name,
+        AVG(Procedure_Heart_Attack_Cost) AS Avg_Heart_Attack_Cost,
+        AVG(Procedure_Heart_Failure_Cost) AS Avg_Heart_Failure_Cost,
+        AVG(Procedure_Pneumonia_Cost) AS Avg_Pneumonia_Cost,
+        AVG(Procedure_Hip_Knee_Cost) AS Avg_Hip_Knee_Cost
+    FROM
+        hospital
+    GROUP BY Facility_Name;
