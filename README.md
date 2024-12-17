@@ -80,11 +80,6 @@ hospital-data-analysis/
 └── README.md
 ```
 
-## Visualizations
-
-- **Bar Charts**: Average ratings by state and procedure costs comparison.
-- **Heatmaps**: Geographic distribution of safety and readmission ratings.
-- **Tables**: Top 5 hospitals by overall rating and cost efficiency.
 
 ## How to Run the Project
 
